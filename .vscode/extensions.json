@@ -1,5 +1,156 @@
-{
-    "recommendations": [
-      "visualstudiotoolsforunity.vstuc"
-    ]
+using Unity.VisualScripting;
+using UnityEngine;
+
+
+public class Entity : MonoBehaviour
+
+{ 
+   protected Animator anim;
+   protected Rigidbody2D rb;
+
+
+   
+   [Header("Attack details")]
+    [SerializeField] protected float attackRaduis;
+    [SerializeField] protected float attackDamage = 1f;
+    [SerializeField] protected Transform attackPoint;
+    [SerializeField] protected LayerMask WhatIsEnemy;
+
+   [Header("Movement details")]
+   [SerializeField]
+   protected float moveSpeed = 3.5f;
+   [SerializeField]
+   private float    TryToJumpForce = 8f;   
+  
+   private float xInput;
+   private bool FacingRight = true;
+   private bool canMove = true;
+   private bool canJump = true;
+
+
+   [Header("Collision details")]
+   [SerializeField]
+   private float groundCheckDistance;
+   [SerializeField]
+   private LayerMask whatIsGround;
+   private bool isGrounded;
+   
+   
+
+   private void Awake()
+   {
+       rb = GetComponent<Rigidbody2D>();
+       anim=GetComponentInChildren<Animator>();
+   }
+   
+   protected virtual void Update()
+    {
+        Handlecollision();
+        Handleinput();
+        Handlemovement();
+        HandleAnimation();
+        HandleFlip();
+       
+    }
+
+    public void DamageTargets()
+    {
+        Collider2D[] enemyColliders = Physics2D.OverlapCircleAll(attackPoint.position, attackRaduis); //);
+
+        foreach (Collider2D enemy in enemyColliders)
+        {
+            Entity entityTarget = enemy.GetComponent<Entity>();
+            entityTarget.TakeDamage();
+
+        }
+
+        
+    }
+
+    private  void TakeDamage()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    protected void HandleAnimation()
+    {
+       anim.SetFloat("xvelocity", rb.linearVelocity.x);
+       anim.SetFloat("yvelocity", rb.linearVelocity.y);
+       anim.SetBool("isGrounded", isGrounded);
+    }
+    public void EnableMovementandJump (bool enable)
+    {
+        canJump = enable;
+        canMove = enable;
+    }   
+
+    
+    private void Handleinput()
+    {
+        xInput = Input.GetAxisRaw("Horizontal");
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+                TryToJump();
+        }
+        if(Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            TryToAttack();
+        }
+    }   
+     protected virtual void TryToAttack()
+   
+   {  if (isGrounded)
+         anim.SetTrigger("attack");
+         rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+         
+   }
+     
+     
+    private void TryToJump()
+    {   
+        if (isGrounded && canJump)
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x,    TryToJumpForce);
+        }
+    }
+
+    protected virtual void Handlemovement()
+    {
+        if (canMove)
+        {
+            rb.linearVelocity = new Vector2(xInput * moveSpeed, rb.linearVelocity.y);
+        }
+         else
+        {
+            rb.linearVelocity = new Vector2(0, rb.linearVelocity.y);
+        }
+    }
+     
+    protected virtual void Handlecollision()
+    {
+        isGrounded = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, whatIsGround);
+    }
+    private void HandleFlip()
+    {
+        if (rb.linearVelocity.x > 0 && FacingRight == false)
+        
+            flip();
+        
+        else if (rb.linearVelocity.x < 0 && FacingRight == true)
+        
+            flip();
+        
+    }
+    private void flip()
+    {
+        transform.Rotate(0 , 180, 0);
+        FacingRight = !FacingRight;
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.DrawLine(transform.position,transform.position + new Vector3(0, -groundCheckDistance));
+        Gizmos.DrawWireSphere(attackPoint.position, attackRaduis);
+    }
 }
+ 
